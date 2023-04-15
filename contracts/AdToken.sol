@@ -109,4 +109,10 @@ contract AdToken is ERC721, ERC721URIStorage, IContentsContract, Ownable {
     ) public view override(ERC721, ERC721URIStorage, IContentsContract) returns (string memory) {
         return super.tokenURI(tokenId);
     }
+
+    function ownerOf(
+        uint256 tokenId
+    ) public view override(ERC721, IContentsContract) returns (address) {
+        return super.ownerOf(tokenId);
+    }
 }
