@@ -4,12 +4,21 @@ pragma solidity ^0.8.9;
 import {ByteHasher} from "./helpers/ByteHasher.sol";
 import {IWorldID} from "./interfaces/IWorldID.sol";
 import "./interfaces/IContentsContract.sol";
+import "./interfaces/LensFollowNFT.sol";
+import "./interfaces/LensHubProxy.sol";
+
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract AdToken is ERC721, ERC721URIStorage, IContentsContract, Ownable {
+    uint256 public requiredLensFollowers;
+    LensHubProxy lensHubProxyInstance;
+
+    event RequiredFollowersUpdated(uint256 oldValue, uint256 newValue);
+    event NewAdContentMinted(uint256 tokenId);
+
     using ByteHasher for bytes;
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -41,19 +50,29 @@ contract AdToken is ERC721, ERC721URIStorage, IContentsContract, Ownable {
     constructor(
         IWorldID _worldId,
         string memory _appId,
-        string memory _actionId
+        string memory _actionId,
+        address _lensProxyHubAddress
     ) ERC721("AdToken", "ADK") {
         worldId = _worldId;
         externalNullifier = abi
             .encodePacked(abi.encodePacked(_appId).hashToField(), _actionId)
             .hashToField();
+        lensHubProxyInstance = LensHubProxy(_lensProxyHubAddress);
     }
 
-    function safeMint(address to, string memory uri) private onlyOwner {
+    function setRequiredFollowers(uint256 _requiredFollowers) external onlyOwner {
+        uint256 oldValue = requiredLensFollowers;
+        requiredLensFollowers = _requiredFollowers;
+        emit RequiredFollowersUpdated(oldValue, _requiredFollowers);
+    }
+
+    function safeMintForDebugging(address to, string memory uri) public onlyOwner returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+
+        return tokenId;
     }
 
     function verifyAndExecute(
@@ -93,7 +112,17 @@ contract AdToken is ERC721, ERC721URIStorage, IContentsContract, Ownable {
 
         // MINT
 
-        safeMint(to, uri);
+        uint256 lensProfileId = lensHubProxyInstance.tokenOfOwnerByIndex(signal, 0);
+        address lensFollowNftAddress = lensHubProxyInstance.getFollowNFT(lensProfileId);
+        LensFollowNFT lensFollowNftInstance = LensFollowNFT(lensFollowNftAddress);
+        uint256 numFollowers = lensFollowNftInstance.totalSupply();
+
+        // require at least one follower
+        require(numFollowers >= requiredLensFollowers, "You have insufficient number of followers on Lens");
+
+        // Mint
+        uint256 tokenId = safeMintForDebugging(to, uri);
+        emit NewAdContentMinted(tokenId);
     }
 
     // The following functions are overrides required by Solidity.
