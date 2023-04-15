@@ -3,13 +3,14 @@ pragma solidity ^0.8.9;
 
 import {ByteHasher} from "./helpers/ByteHasher.sol";
 import {IWorldID} from "./interfaces/IWorldID.sol";
+import {IContentsContract} from "./interfaces/IContentsContract.sol";
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract AdToken is ERC721, ERC721URIStorage, Ownable {
+contract AdToken is ERC721, ERC721URIStorage, IContentsContract, Ownable {
     using ByteHasher for bytes;
 
     ///////////////////////////////////////////////////////////////////////////////
