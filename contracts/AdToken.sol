@@ -66,7 +66,7 @@ contract AdToken is ERC721, ERC721URIStorage, IContentsContract, Ownable {
         emit RequiredFollowersUpdated(oldValue, _requiredFollowers);
     }
 
-    function safeMintForDebugging(address to, string memory uri) public onlyOwner returns (uint256) {
+    function safeMintForDebugging(address to, string memory uri) public returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
